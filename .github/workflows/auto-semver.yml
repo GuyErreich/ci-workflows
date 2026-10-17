@@ -20,7 +20,7 @@ jobs:
     name: tag and release
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,6 +42,8 @@ jobs:
         with:
           client-id: ${{ vars.GH_APP_CLIENT_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
 
       - name: Resolve merged PR event
         id: event
@@ -50,6 +52,8 @@ jobs:
           EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
         run: bash scripts/write-auto-semver-event.sh
 
+      # App token is written into the git remote in this step. No third-party
+      # step may run after that (see README / docs/semver-bypass.md).
       - name: Bump, changelog, tag, and release
         if: steps.event.outputs.skip != 'true'
         env:

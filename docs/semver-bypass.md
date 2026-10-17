@@ -13,6 +13,10 @@ Direct-main release commits `chore: release x.y.z` to `main` and creates `v*` ta
 
 `always` on main is required because the release commit is pushed directly, not via a pull request.
 
+## Token hygiene
+
+The release job writes the app token into the git remote (`git remote set-url` with `x-access-token`). **No third-party step may run after that.** Keep later work in the same in-repo `run:` step. Do not add a `uses:` action after the credential is on `origin`.
+
 ## How to apply later
 
 1. Export `SEMVER_APP_ID` as the numeric GitHub App id (not the `Iv1.` client id).

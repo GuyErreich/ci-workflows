@@ -7,6 +7,12 @@ inputs:
   private-key:
     description: 'The GitHub App Private Key'
     required: true
+  repositories:
+    description: 'Repositories to grant the installation token (create-github-app-token repositories)'
+    required: true
+  permission-contents:
+    description: 'contents permission for the installation token (read or write)'
+    required: true
 outputs:
   token:
     description: "The installation access token"
@@ -26,6 +32,8 @@ runs:
       with:
         client-id: ${{ inputs.client-id }}
         private-key: ${{ inputs.private-key }}
+        repositories: ${{ inputs.repositories }}
+        permission-contents: ${{ inputs.permission-contents }}
     - name: Get GitHub App User Info
       id: get-user-info
       shell: bash
