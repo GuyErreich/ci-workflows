@@ -1,6 +1,42 @@
+# Conventional PR titles for autosemver release-note grouping only.
+# Version bumps stay branch-based. Callers must use on: pull_request (never
+# pull_request_target). Types default to Backpin auto_semver_config.yml
+# commit_groups conventional prefixes (dev, lines 19–120).
 name: PR title
 on:
-  workflow_call: {}
+  workflow_call:
+    inputs:
+      types:
+        description: Conventional types recognized by autosemver release-note categories
+        type: string
+        default: |
+          breaking
+          major
+          feat
+          feature
+          add
+          enhance
+          refactor
+          style
+          format
+          lint
+          chore
+          ci
+          build
+          devops
+          dep
+          deps
+          fix
+          bug
+          hotfix
+          patch
+          test
+          tests
+          testing
+          doc
+          docs
+          documentation
+          readme
 permissions: {}
 jobs:
   title:
@@ -8,19 +44,24 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      # Used for release-note grouping only. Version bumps stay branch-based (autosemver).
-      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+      # Exact title match only — do not use ignoreLabels (triage can add those).
+      - name: Exempt autosemver release titles
+        id: exempt
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+          if printf '%s\n' "$PR_TITLE" | grep -Eq '^Release [0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "Autosemver release title — skipping conventional-type check"
+            echo "match=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "match=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check conventional title
+        if: steps.exempt.outputs.match != 'true'
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
-          types: |
-            feat
-            fix
-            chore
-            docs
-            refactor
-            test
-            ci
-            build
-            perf
+          types: ${{ inputs.types }}
           requireScope: false
