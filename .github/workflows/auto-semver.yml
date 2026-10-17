@@ -1,0 +1,64 @@
+# Direct-main release: bump or finalize on push to main only (never pull_request /
+# pull_request_target). Action-Semver-Control still expects a merged-PR payload,
+# so a prior step writes a synthetic event from the commit's associated PR.
+# Backpin pin: GuyErreich/Action-Semver-Control@v1 → SHA 7060fb5 (1.8.19).
+name: Auto Semver
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: auto-semver-${{ github.repository }}-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: tag and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Get GitHub App Token
+        uses: ./.github/actions/app-authentication
+        id: app-token
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+      - name: Resolve merged PR event
+        id: event
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
+        run: bash scripts/write-auto-semver-event.sh
+
+      - name: Configure Git for App
+        if: steps.event.outputs.skip != 'true'
+        env:
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_USER_NAME: ${{ steps.app-token.outputs.user-name }}
+          APP_USER_EMAIL: ${{ steps.app-token.outputs.user-email }}
+        run: |
+          set -euo pipefail
+          git config user.name "$APP_USER_NAME"
+          git config user.email "$APP_USER_EMAIL"
+          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+      - name: Run Auto Semver Action
+        if: steps.event.outputs.skip != 'true'
+        uses: GuyErreich/Action-Semver-Control@7060fb502694ffdff0a40baf9c671c10afedcd66 # v1 (1.8.19)
+        env:
+          GITHUB_EVENT_PATH: ${{ runner.temp }}/auto-semver-event.json
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          signed-commits: "true"
+          debug: "true"
