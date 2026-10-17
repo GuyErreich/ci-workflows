@@ -1,0 +1,22 @@
+name: License headers
+on:
+  workflow_call: {}
+permissions: {}
+jobs:
+  license:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check GPL-3.0-or-later headers on Kotlin and XML files
+        run: |
+          missing=$(git ls-files '*.kt' '*.kts' '*.xml' | while read -r f; do
+            head -n 15 "$f" | grep -q 'SPDX-License-Identifier: GPL-3.0-or-later' || echo "$f"; done)
+          if [ -n "$missing" ]; then
+            echo "Files missing the GPL-3.0-or-later SPDX header:"; echo "$missing"
+            echo "Template: https://github.com/GuyErreich/ci-workflows/blob/main/config/license-header.txt"
+            exit 1
+          fi
