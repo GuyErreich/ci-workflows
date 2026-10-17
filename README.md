@@ -24,6 +24,6 @@ ASC 1.8.19 `bump` always opens a `Release x.y.z` PR (`cli/bump.py` `_publish_rel
 
 **Release-note categories** follow Backpin headings (Breaking, Features, Refactoring, Infrastructure, Fixes, Testing, Documentation). The union of type prefixes is exactly the 27 `pr-title.yml` types. No `Other Changes`.
 
-The `tag and release` job uses `contents: read` on `GITHUB_TOKEN`. All writes use the GitHub App token, scoped to this repository with `permission-contents: write`. **No third-party step may run after the app token is written into the git remote.** App-API commits should be verified; confirm on the first run.
+The `tag and release` job uses `contents: read` on `GITHUB_TOKEN`. All writes use the GitHub App token, scoped to this repository with `permission-contents: write`. After the app token is written into the git remote, the **only** allowed third-party step is the pinned `GuyErreich/Action-Semver-Control` action at `7060fb502694ffdff0a40baf9c671c10afedcd66`; no other third-party steps after that. App-API commits should be verified; confirm on the first run.
 
 Ruleset **always** bypasses (GET live ruleset, add actor if missing, PUT) are in [docs/semver-bypass.md](docs/semver-bypass.md) and [rulesets/](rulesets/). Not applied by this change.
