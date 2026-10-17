@@ -44,15 +44,26 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      # Exact title match only — do not use ignoreLabels (triage can add those).
+      # Both title pattern and bot author required. Do not use ignoreLabels
+      # (triage can add those). Title and author are passed via env — never
+      # interpolated into run:. This job has no job-level if.
       - name: Exempt autosemver release titles
         id: exempt
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
+          title_ok=false
+          author_ok=false
           if printf '%s\n' "$PR_TITLE" | grep -Eq '^Release [0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
-            echo "Autosemver release title — skipping conventional-type check"
+            title_ok=true
+          fi
+          if [ "$PR_AUTHOR" = 'auto-semver-bot[bot]' ]; then
+            author_ok=true
+          fi
+          if [ "$title_ok" = true ] && [ "$author_ok" = true ]; then
+            echo "Autosemver bot release title — skipping conventional-type check"
             echo "match=true" >> "$GITHUB_OUTPUT"
           else
             echo "match=false" >> "$GITHUB_OUTPUT"
