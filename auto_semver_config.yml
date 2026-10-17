@@ -11,127 +11,70 @@ version_files:
 lock_sync:
   enabled: false
 
-release:
-  strategy: single
-  branch_prefix: auto-semver/release/
-  cleanup_merged: true
-
-bump:
-  mode: classic
-
-# Categories are 1:1 with pr-title.yml workflow_call types (nothing extra,
-# nothing missing). Ignore is not a release-note section; it absorbs housekeeping
-# so Action-Semver-Control does not invent an "Other Changes" group.
+# Grouped like Backpin. Union of conventional type prefixes is exactly the
+# 27 types in pr-title.yml. No Other Changes (Ignore is omitted from notes).
+# Bump is title-mapped in scripts/semver_release.py — ASC has no title bump
+# and always opens a Release PR (bump.py _publish_release), so this repo
+# does not invoke that path.
 commit_groups:
   summary_mode: header_only
   groups:
-    - title: "breaking"
-      patterns: ["^breaking(\\([^)]*\\))?(!)?:"]
+    - title: "Breaking Changes"
+      patterns:
+        - "^(BREAKING CHANGE|breaking)(\\([^)]*\\))?:"
+        - "^major(\\([^)]*\\))?:"
+        - "^feat.*!:"
+        - "^fix.*!:"
       priority: 1
-    - title: "major"
-      patterns: ["^major(\\([^)]*\\))?(!)?:"]
+    - title: "Features & Enhancements"
+      patterns:
+        - "^feat(\\([^)]*\\))?:"
+        - "^feature(\\([^)]*\\))?:"
+        - "^add(\\([^)]*\\))?:"
+        - "^enhance(\\([^)]*\\))?:"
       priority: 2
-    - title: "feat"
-      patterns: ["^feat(\\([^)]*\\))?(!)?:"]
+    - title: "Refactoring & Code Quality"
+      patterns:
+        - "^refactor(\\([^)]*\\))?:"
+        - "^style(\\([^)]*\\))?:"
+        - "^format(\\([^)]*\\))?:"
+        - "^lint(\\([^)]*\\))?:"
       priority: 3
-    - title: "feature"
-      patterns: ["^feature(\\([^)]*\\))?(!)?:"]
+    - title: "Infrastructure & Tooling"
+      patterns:
+        - "^chore(\\([^)]*\\))?:"
+        - "^ci(\\([^)]*\\))?:"
+        - "^build(\\([^)]*\\))?:"
+        - "^devops(\\([^)]*\\))?:"
+        - "^deps?(\\([^)]*\\))?:"
       priority: 4
-    - title: "add"
-      patterns: ["^add(\\([^)]*\\))?(!)?:"]
+    - title: "Bug Fixes & Resolutions"
+      patterns:
+        - "^fix(\\([^)]*\\))?:"
+        - "^bug(\\([^)]*\\))?:"
+        - "^hotfix(\\([^)]*\\))?:"
+        - "^patch(\\([^)]*\\))?:"
       priority: 5
-    - title: "enhance"
-      patterns: ["^enhance(\\([^)]*\\))?(!)?:"]
+    - title: "Testing"
+      patterns:
+        - "^test(\\([^)]*\\))?:"
+        - "^tests?(\\([^)]*\\))?:"
+        - "^testing(\\([^)]*\\))?:"
       priority: 6
-    - title: "refactor"
-      patterns: ["^refactor(\\([^)]*\\))?(!)?:"]
+    - title: "Documentation"
+      patterns:
+        - "^docs?(\\([^)]*\\))?:"
+        - "^documentation(\\([^)]*\\))?:"
+        - "^readme(\\([^)]*\\))?:"
       priority: 7
-    - title: "style"
-      patterns: ["^style(\\([^)]*\\))?(!)?:"]
-      priority: 8
-    - title: "format"
-      patterns: ["^format(\\([^)]*\\))?(!)?:"]
-      priority: 9
-    - title: "lint"
-      patterns: ["^lint(\\([^)]*\\))?(!)?:"]
-      priority: 10
-    - title: "chore"
-      patterns: ["^chore(?!\\(release\\))(?!: finalize semver lock)(\\([^)]*\\))?(!)?:"]
-      priority: 11
-    - title: "ci"
-      patterns: ["^ci(\\([^)]*\\))?(!)?:"]
-      priority: 12
-    - title: "build"
-      patterns: ["^build(\\([^)]*\\))?(!)?:"]
-      priority: 13
-    - title: "devops"
-      patterns: ["^devops(\\([^)]*\\))?(!)?:"]
-      priority: 14
-    - title: "dep"
-      patterns: ["^dep(\\([^)]*\\))?(!)?:"]
-      priority: 15
-    - title: "deps"
-      patterns: ["^deps(\\([^)]*\\))?(!)?:"]
-      priority: 16
-    - title: "fix"
-      patterns: ["^fix(\\([^)]*\\))?(!)?:"]
-      priority: 17
-    - title: "bug"
-      patterns: ["^bug(\\([^)]*\\))?(!)?:"]
-      priority: 18
-    - title: "hotfix"
-      patterns: ["^hotfix(\\([^)]*\\))?(!)?:"]
-      priority: 19
-    - title: "patch"
-      patterns: ["^patch(\\([^)]*\\))?(!)?:"]
-      priority: 20
-    - title: "test"
-      patterns: ["^test(\\([^)]*\\))?(!)?:"]
-      priority: 21
-    - title: "tests"
-      patterns: ["^tests(\\([^)]*\\))?(!)?:"]
-      priority: 22
-    - title: "testing"
-      patterns: ["^testing(\\([^)]*\\))?(!)?:"]
-      priority: 23
-    - title: "doc"
-      patterns: ["^doc(\\([^)]*\\))?(!)?:"]
-      priority: 24
-    - title: "docs"
-      patterns: ["^docs(\\([^)]*\\))?(!)?:"]
-      priority: 25
-    - title: "documentation"
-      patterns: ["^documentation(\\([^)]*\\))?(!)?:"]
-      priority: 26
-    - title: "readme"
-      patterns: ["^readme(\\([^)]*\\))?(!)?:"]
-      priority: 27
     - title: "Ignore"
       patterns:
         - "^Release [0-9]+\\.[0-9]+\\.[0-9]+.*"
         - "^chore: finalize semver lock"
+        - "^chore: release "
         - "^chore\\(release\\):"
         - ".*"
       priority: 90
-
-pull_request:
-  title: "Release {{version}}"
-  labels:
-    - "semver-bump"
-  body: |
-    ## Release Notes
-    **Version:** {{version}}
-    **Date:** {{date}}
-
-    {% for group in commit_groups -%}
-    {% if group.title != "Ignore" and group.commits -%}
-    ### {{ group.title }}
-    {% for commit in group.commits -%}
-    - {{ commit.title }}
-    {% endfor %}
-
-    {% endif -%}
-    {% endfor -%}
 
 changelog:
   file: "CHANGELOG.md"

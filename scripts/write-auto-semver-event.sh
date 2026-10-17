@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Build a synthetic merged-PR event for Action-Semver-Control from a push SHA.
-# Title/body are copied via jq (never interpolated into the script text).
+# Build a merged-PR JSON event from the push SHA (title via jq, not run:).
 set -euo pipefail
 
 out="${EVENT_OUT:?EVENT_OUT is required}"
@@ -8,12 +7,15 @@ repo="${GITHUB_REPOSITORY:?}"
 sha="${GITHUB_SHA:?}"
 github_output="${GITHUB_OUTPUT:-/dev/null}"
 
-subject="$(git log -1 --format=%s -- "$sha" 2>/dev/null || git log -1 --format=%s)"
-if [ "$subject" = "chore: finalize semver lock" ]; then
-  echo "skip=true" >> "$github_output"
-  echo "Finalize lock commit — skipping auto-semver"
-  exit 0
-fi
+# SHA is a revision, not a path — do not pass it after --.
+subject="$(git log -1 --format=%s "$sha")"
+case "$subject" in
+  "chore: finalize semver lock"*|"chore: release "*)
+    echo "skip=true" >> "$github_output"
+    echo "Release/finalize commit — skipping to avoid a second bump"
+    exit 0
+    ;;
+esac
 
 pr_json="$(gh api "repos/${repo}/commits/${sha}/pulls" \
   -H "Accept: application/vnd.github.groot-preview+json")"

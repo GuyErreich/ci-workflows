@@ -1,11 +1,10 @@
-# Prepared ruleset updates (do not apply from CI)
+# Semver app bypass (do not apply from CI)
 
-Draft JSON + `gh api` commands for the semver GitHub App **always** bypasses described in [docs/semver-bypass.md](../docs/semver-bypass.md).
+`apply-bypasses.sh` **GETs the live ruleset**, adds the actor in `bypass-actor.json` if it is not already there, and prints the PUT body. It does not ship full snapshots.
 
 | File | Purpose |
 |---|---|
-| `releases-always-bypass.json` | PUT body for ruleset **Releases** (`25303595`, `v*` tags) |
-| `main-always-bypass.json` | PUT body for ruleset **Standard Flow (main)** (`25303593`) |
-| `apply-bypasses.sh` | Prints (or, only with an explicit flag, runs) the two `gh api` PUTs |
+| `bypass-actor.json` | Minimal actor fragment (`Integration` + `always`) |
+| `apply-bypasses.sh` | Live GET → merge → print PUT (apply only with the explicit flag) |
 
-Replace `SEMVER_APP_ID` with the numeric App id before any apply. These files are documentation and command templates only.
+Set `SEMVER_APP_ID` to the numeric GitHub App id before applying. The placeholder is refused. See [docs/semver-bypass.md](../docs/semver-bypass.md).

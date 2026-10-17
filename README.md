@@ -16,14 +16,14 @@ All reusable workflows default to `permissions: {}` and grant per job.
 
 ## Auto-semver (this repo)
 
-This repository is a **direct `main` flow**. `.github/workflows/auto-semver.yml` runs only on `push` to `main` (never `pull_request` / `pull_request_target`). It uses the same GitHub App pattern as [Backpin](https://github.com/GuyErreich/Backpin) (`vars.GH_APP_CLIENT_ID`, `secrets.GH_APP_PRIVATE_KEY`, local `app-authentication` composite) and pins [Action-Semver-Control](https://github.com/GuyErreich/Action-Semver-Control) to the current `v1` commit (`7060fb502694ffdff0a40baf9c671c10afedcd66`, 1.8.19).
+This repository **tags and releases directly from `main`**. `.github/workflows/auto-semver.yml` runs only on `push` to `main` (never `pull_request` / `pull_request_target`). It uses the same GitHub App pattern as [Backpin](https://github.com/GuyErreich/Backpin) and pins [Action-Semver-Control](https://github.com/GuyErreich/Action-Semver-Control) at `7060fb502694ffdff0a40baf9c671c10afedcd66` (`v1` / 1.8.19) **for version math only**.
 
-Action-Semver-Control still reads a merged-PR payload. On push, `scripts/write-auto-semver-event.sh` builds that payload from the commit's associated PR (title via jq, not `run:` interpolation). The finalize commit `chore: finalize semver lock` is skipped so the bot does not loop.
+ASC 1.8.19 `bump` always opens a `Release x.y.z` PR (`cli/bump.py` `_publish_release`). That path is not invoked. There is no `pull_request` / `release.strategy` template here. After `chore: release x.y.z` lands, the workflow skips so there is no second bump.
 
-**Bumps** are branch-based inside the action (classic mode): `feature/` → minor, `fix/` (also `bug/` / `hotfix/` / `chore/` / `devops/`) → patch. That is the `feat` = minor, `fix` = patch policy. PR titles still only group release notes.
+**Bumps:** ASC classic mode defaults **unknown prefixes (including `cursor/`) to patch** (`version.py` `detect_bump_type`). This repo maps the merged PR title onto a prefix ASC understands (`feat`/`feature`/`add`/`enhance` → `feature/` = minor; `fix`/`bug`/`hotfix`/`patch` → `fix/` = patch; `breaking`/`major` or `type!` → `breaking/` = major). Evidence: `ASC_SRC=... python3 scripts/dry-run-cursor-bump.py`.
 
-**Release-note categories** in `auto_semver_config.yml` are exactly the allowed types in `pr-title.yml` (including `ci`). There is no `Other Changes` section; unmatched lines go to an internal `Ignore` group that the changelog template omits.
+**Release-note categories** follow Backpin headings (Breaking, Features, Refactoring, Infrastructure, Fixes, Testing, Documentation). The union of type prefixes is exactly the 27 `pr-title.yml` types. No `Other Changes`.
 
-`contents: write` is granted only on the `tag and release` job. App-API commits should be verified; confirm on the first run.
+`contents: write` is only on the `tag and release` job. App-API commits should be verified; confirm on the first run.
 
-Required ruleset **always** bypasses for the semver app (Releases `v*` tags + `main`, so finalize can commit to `main`) are documented in [docs/semver-bypass.md](docs/semver-bypass.md) and prepared as JSON/`gh api` files under [rulesets/](rulesets/). Those files are not applied by this change.
+Ruleset **always** bypasses (GET live ruleset, add actor if missing, PUT) are in [docs/semver-bypass.md](docs/semver-bypass.md) and [rulesets/](rulesets/). Not applied by this change.
