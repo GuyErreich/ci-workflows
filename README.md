@@ -8,7 +8,7 @@ Reusable GitHub Actions workflows and configs shared across my repos. Callers pi
 | ktlint.yml | Ray | ktlint format check |
 | pr-title.yml | Ray | Conventional PR titles (release-note grouping only) |
 | secret-scan.yml | Adam | gitleaks |
-| codeql.yml | Adam | CodeQL for Kotlin/Java |
+| codeql.yml | Adam | CodeQL for Kotlin/Java and the workflow files |
 | test.yml | Gali | Robolectric/unit tests and reports |
 
 All workflows default to `permissions: {}` and grant per job.
