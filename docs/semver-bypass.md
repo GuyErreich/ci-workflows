@@ -15,7 +15,7 @@ Direct-main release commits `chore: release x.y.z` to `main` and creates `v*` ta
 
 ## Token hygiene
 
-The release job writes the app token into the git remote (`git remote set-url` with `x-access-token`). After that, the **only** allowed third-party step is the pinned `GuyErreich/Action-Semver-Control` action at `7060fb502694ffdff0a40baf9c671c10afedcd66` (`v1` / 1.8.19). No other third-party step may run after the token is in the remote.
+The release job writes the app token into the git remote (`git remote set-url` with `x-access-token`). **No third-party step may run after that.** Keep later work in the same in-repo `run:` step. Do not add a `uses:` action after the credential is on `origin`.
 
 ## How to apply later
 
