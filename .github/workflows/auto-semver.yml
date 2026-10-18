@@ -1,0 +1,67 @@
+# Direct tag + GitHub Release on push to main only (never pull_request /
+# pull_request_target). ASC 1.8.19 bump always opens a Release PR
+# (cli/bump.py _publish_release); this workflow does not call that path.
+# Version math uses ASC Version.bump after mapping the PR title to a prefix
+# the action understands. Pin: v1 → 7060fb5 (1.8.19), same as Backpin.
+name: Auto Semver
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: auto-semver-${{ github.repository }}-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: tag and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Checkout Action-Semver-Control
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: GuyErreich/Action-Semver-Control
+          ref: 7060fb502694ffdff0a40baf9c671c10afedcd66 # v1 (1.8.19)
+          path: _asc
+          persist-credentials: false
+
+      - name: Get GitHub App Token
+        uses: ./.github/actions/app-authentication
+        id: app-token
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+
+      - name: Resolve merged PR event
+        id: event
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
+        run: bash scripts/write-auto-semver-event.sh
+
+      # App token is in env for this in-repo step only. No third-party step
+      # may run while the token is available (see README / docs/semver-bypass.md).
+      - name: Bump, changelog, tag, and release
+        if: steps.event.outputs.skip != 'true'
+        env:
+          EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
+          ASC_SRC: ${{ github.workspace }}/_asc/src
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_NOTES_OUT: ${{ runner.temp }}/release-notes.md
+          EXPECTED_HEAD_OID: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python3 scripts/semver_release.py --event-json "$EVENT_OUT" --publish

@@ -1,0 +1,95 @@
+start_version: "0.1.2"
+
+suffixes:
+  main: ""
+
+promotions: []
+
+version_files:
+  - "version.txt"
+
+lock_sync:
+  enabled: false
+
+# Grouped like Backpin. Union of conventional type prefixes is exactly the
+# 27 types in pr-title.yml. No Other Changes (Ignore is omitted from notes).
+# Bump is title-mapped in scripts/semver_release.py — ASC has no title bump
+# and always opens a Release PR (bump.py _publish_release), so this repo
+# does not invoke that path.
+commit_groups:
+  summary_mode: header_only
+  groups:
+    - title: "Breaking Changes"
+      patterns:
+        - "^(BREAKING CHANGE|breaking)(\\([^)]*\\))?:"
+        - "^major(\\([^)]*\\))?:"
+        - "^[A-Za-z]+(\\([^)]*\\))?!:"
+      priority: 1
+    - title: "Features & Enhancements"
+      patterns:
+        - "^feat(\\([^)]*\\))?:"
+        - "^feature(\\([^)]*\\))?:"
+        - "^add(\\([^)]*\\))?:"
+        - "^enhance(\\([^)]*\\))?:"
+      priority: 2
+    - title: "Refactoring & Code Quality"
+      patterns:
+        - "^refactor(\\([^)]*\\))?:"
+        - "^style(\\([^)]*\\))?:"
+        - "^format(\\([^)]*\\))?:"
+        - "^lint(\\([^)]*\\))?:"
+      priority: 3
+    - title: "Infrastructure & Tooling"
+      patterns:
+        - "^chore(\\([^)]*\\))?:"
+        - "^ci(\\([^)]*\\))?:"
+        - "^build(\\([^)]*\\))?:"
+        - "^devops(\\([^)]*\\))?:"
+        - "^deps?(\\([^)]*\\))?:"
+      priority: 4
+    - title: "Bug Fixes & Resolutions"
+      patterns:
+        - "^fix(\\([^)]*\\))?:"
+        - "^bug(\\([^)]*\\))?:"
+        - "^hotfix(\\([^)]*\\))?:"
+        - "^patch(\\([^)]*\\))?:"
+      priority: 5
+    - title: "Testing"
+      patterns:
+        - "^test(\\([^)]*\\))?:"
+        - "^tests?(\\([^)]*\\))?:"
+        - "^testing(\\([^)]*\\))?:"
+      priority: 6
+    - title: "Documentation"
+      patterns:
+        - "^docs?(\\([^)]*\\))?:"
+        - "^documentation(\\([^)]*\\))?:"
+        - "^readme(\\([^)]*\\))?:"
+      priority: 7
+    - title: "Ignore"
+      patterns:
+        - "^Release [0-9]+\\.[0-9]+\\.[0-9]+.*"
+        - "^chore: finalize semver lock"
+        - "^chore: release "
+        - "^chore\\(release\\):"
+        - ".*"
+      priority: 90
+
+changelog:
+  file: "CHANGELOG.md"
+  truncate: false
+  template: |
+    ## [{{version}}] - {{date}}
+
+    {% for group in commit_groups -%}
+    {% if group.title != "Ignore" and group.commits -%}
+    ### {{ group.title }}
+    {% for commit in group.commits -%}
+    - {{ commit.title }}
+    {% endfor %}
+
+    {% endif -%}
+    {% endfor -%}
+  header: |
+    # Changelog
+    All notable changes to this project will be documented in this file.
