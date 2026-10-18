@@ -23,8 +23,7 @@ commit_groups:
       patterns:
         - "^(BREAKING CHANGE|breaking)(\\([^)]*\\))?:"
         - "^major(\\([^)]*\\))?:"
-        - "^feat.*!:"
-        - "^fix.*!:"
+        - "^[A-Za-z]+(\\([^)]*\\))?!:"
       priority: 1
     - title: "Features & Enhancements"
       patterns:

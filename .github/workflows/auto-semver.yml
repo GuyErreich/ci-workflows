@@ -52,29 +52,16 @@ jobs:
           EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
         run: bash scripts/write-auto-semver-event.sh
 
-      # App token is written into the git remote in this step. No third-party
-      # step may run after that (see README / docs/semver-bypass.md).
+      # App token is in env for this in-repo step only. No third-party step
+      # may run while the token is available (see README / docs/semver-bypass.md).
       - name: Bump, changelog, tag, and release
         if: steps.event.outputs.skip != 'true'
         env:
-          APP_TOKEN: ${{ steps.app-token.outputs.token }}
-          APP_USER_NAME: ${{ steps.app-token.outputs.user-name }}
-          APP_USER_EMAIL: ${{ steps.app-token.outputs.user-email }}
           EVENT_OUT: ${{ runner.temp }}/auto-semver-event.json
           ASC_SRC: ${{ github.workspace }}/_asc/src
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RELEASE_NOTES_OUT: ${{ runner.temp }}/release-notes.md
+          EXPECTED_HEAD_OID: ${{ github.sha }}
         run: |
           set -euo pipefail
-          python3 scripts/semver_release.py --event-json "$EVENT_OUT"
-          version="$(tr -d '[:space:]' < version.txt)"
-          tag="v${version}"
-          git config user.name "$APP_USER_NAME"
-          git config user.email "$APP_USER_EMAIL"
-          git remote set-url origin "https://x-access-token:${APP_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          git add version.txt CHANGELOG.md
-          git commit -m "chore: release ${version}"
-          git tag -a "${tag}" -m "${tag}"
-          git push origin HEAD:main
-          git push origin "refs/tags/${tag}"
-          gh release create "${tag}" --title "${tag}" --notes-file "$RELEASE_NOTES_OUT"
+          python3 scripts/semver_release.py --event-json "$EVENT_OUT" --publish

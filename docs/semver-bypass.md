@@ -1,6 +1,6 @@
 # Semver app ruleset bypasses (not applied)
 
-Direct-main release commits `chore: release x.y.z` to `main` and creates `v*` tags with the GitHub App token. Those writes need an **always** bypass on both existing rulesets. App-API commits should show as verified on GitHub; confirm that on the first real run.
+Direct-main release commits `chore: release x.y.z` to `main` via GraphQL `createCommitOnBranch` and creates `v*` tags with the GitHub App token. Those writes need an **always** bypass on both existing rulesets. App-API commits should show as verified on GitHub; confirm that on the first real run.
 
 `rulesets/apply-bypasses.sh` **GETs the live ruleset**, adds only the actor in `rulesets/bypass-actor.json` if it is missing, and prints the PUT body. It does **not** store or PUT a full saved snapshot (a stale snapshot would overwrite later ruleset edits). **Do not apply from this change.**
 
@@ -15,7 +15,7 @@ Direct-main release commits `chore: release x.y.z` to `main` and creates `v*` ta
 
 ## Token hygiene
 
-The release job writes the app token into the git remote (`git remote set-url` with `x-access-token`). **No third-party step may run after that.** Keep later work in the same in-repo `run:` step. Do not add a `uses:` action after the credential is on `origin`.
+The release job uses the app token for GraphQL `createCommitOnBranch`, the tag REST call, and `gh release create`. The token is not written into the git remote. **No third-party step may run while the app token is available.** Keep those writes in in-repo `run:` steps.
 
 ## How to apply later
 
